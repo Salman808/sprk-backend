@@ -1,0 +1,72 @@
+version: '3'
+
+services:
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypass
+      POSTGRES_DB: mydb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+  web:
+    build: .
+    image: sprk-django:latest
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/code/
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: db
+      DB_NAME: mydb
+      DB_USER: myuser
+      DB_PASSWORD: mypass
+    depends_on:
+      - db
+      - test
+      - makemigration
+      - migration
+
+  makemigration:
+    image: sprk-django
+    command: python manage.py makemigrations --noinput
+    environment:
+      DB_HOST: db
+      DB_NAME: mydb
+      DB_USER: myuser
+      DB_PASSWORD: mypass
+    volumes:
+      - .:/code
+    depends_on:
+      - db
+
+  migration:
+    image: sprk-django
+    command: python manage.py migrate --noinput
+    environment:
+      DB_HOST: db
+      DB_NAME: mydb
+      DB_USER: myuser
+      DB_PASSWORD: mypass
+    volumes:
+      - .:/code
+    depends_on:
+      - db
+      - makemigration
+
+  test:
+    image: sprk-django
+    command: python manage.py test
+    environment:
+      DB_HOST: db
+      DB_NAME: mydb
+      DB_USER: myuser
+      DB_PASSWORD: mypass
+    volumes:
+      - .:/code
+
+
+volumes:
+  postgres_data:
